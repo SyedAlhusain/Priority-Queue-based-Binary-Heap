@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<style>
+	body {
+		background-color: #000;
+		padding: 10px;
+	}
+
+	#myCanvas {
+		border: 1px solid #FFF;
+		border-radius: 10px;
+		background-color: #333;
+	}
+
+	#myInput,
+	#myButton {
+		border: 0px;
+		padding: 10px;
+	}
+
+	#myInput {
+		color: #FFF;
+		background-color: #555;
+		width: 1000px;
+	}
+
+	#myButton {
+		background-color: #AFA;
+		width: 150px;
+		color: #000;
+	}
+</style>
+
+<body>
+
+	<input id="myInput" type="text" />
+	<button id="myButton" onclick="drawTree()">Render</button>
+	<br />
+	<br />
+	<canvas id="myCanvas" width="1280" height="720"></canvas>
+
+	<script>
+		function drawTree() {
+			let canvas = document.getElementById("myCanvas");
+			let ctx = canvas.getContext("2d");
+			let input = document.getElementById("myInput").value;
+
+			//Convert the dump text to objects
+			//Example text input
+			//((((19224:0)19289:1(19372:0))20201:2((26241:0)27904:1))53002:3(60496:1(93209:0)))
+			//((1000:0)10001:1(1002:0))
+			try {
+				function getTree(str) {
+					//Skip opening and ending parentheses
+					str = str.substring(1, str.length - 1);
+					let node = { left: null, value: "", right: null };
+					//If there is anything on the left
+					let closing = -1;
+					if (str.charAt(0) == "(") {
+						closing = findClosingParenthesis(str);
+						node.left = getTree(str.substring(0, closing + 1));
+					}
+					//If there is anything on the right
+					let opening = str.indexOf("(", closing);
+					if (opening != -1) {
+						node.right = getTree(str.substring(opening, str.length));
+					} else {
+						opening = str.length;
+					}
+					//Value
+					node.value = str.substring(closing + 1, opening);
+					return node;
+				}
+				function findClosingParenthesis(str) {
+					let stack = [];
+					for (let i = 0; i < str.length; i++) {
+						if (str.charAt(i) == "(") {
+							stack.push("");
+						} else if (str.charAt(i) == ")") {
+							stack.pop();
+							if (stack.length == 0) {
+								return i;
+							}
+						}
+					}
+					return -1;
+				}
+				function drawTree(tree, x, y, width, height_inc) {
+					//Draw nodes on the left and right with connectors, then the value
+					let pad_w = 32;
+					let pad_h = 10;
+					if (tree.left != null) {
+						ctx.beginPath();
+						ctx.moveTo(x + (width / 2), y);
+						ctx.lineTo(x + (width / 4), y + height_inc);
+						ctx.stroke();
+						drawTree(tree.left, x, y + height_inc, width / 2, height_inc);
+					}
+					if (tree.right != null) {
+						ctx.beginPath();
+						ctx.moveTo(x + (width / 2), y);
+						ctx.lineTo(x + (width * (3 / 4)), y + height_inc);
+						ctx.stroke();
+						drawTree(tree.right, x + (width / 2), y + height_inc, width / 2, height_inc);
+					}
+					ctx.beginPath();
+					ctx.fillStyle = "white";
+					ctx.fillRect(x + (width / 2) - pad_w, y - pad_h, pad_w * 2, pad_h * 2);
+					ctx.fillStyle = "black";
+					ctx.fillText(tree.value, x + (width / 2), y);
+					ctx.stroke();
+				}
+
+				//Draw the entire tree starting from the root
+				let root = getTree(input);
+				ctx.font = "15px Consolas";
+				ctx.textAlign = "center";
+				ctx.textBaseline = "middle";
+				ctx.fillStyle = "#333333";
+				ctx.fillRect(0, 0, 1280, 720);
+				ctx.fillStyle = "white";
+				ctx.strokeStyle = "white";
+				drawTree(root, 0, 15, 1280, 60);
+			}
+			catch (e) {
+				console.log(e);
+			}
+		}
+	</script>
+
+</body>
+
+</html>
